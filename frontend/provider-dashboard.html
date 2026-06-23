@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Provider Dashboard — SkillSwap</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<nav class="navbar">
+  <a class="nav-logo" href="index.html">SkillSwap</a>
+  <div class="nav-links" id="navLinks"></div>
+</nav>
+<div class="dashboard-wrap">
+  <div class="dashboard-header">
+    <h1>Provider Dashboard</h1>
+    <p class="text-muted">Manage your services and booking requests</p>
+  </div>
+  <div class="alert" id="dashAlert"></div>
+
+  <div class="stats-row">
+    <div class="stat-card" id="statPending" data-val="0"><div class="num">—</div><div class="lbl">Pending</div></div>
+    <div class="stat-card" id="statActive"  data-val="0"><div class="num">—</div><div class="lbl">Active</div></div>
+    <div class="stat-card" id="statCompleted" data-val="0"><div class="num">—</div><div class="lbl">Completed</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-target="tabBookings">Bookings</div>
+    <div class="tab" data-target="tabServices">My Services</div>
+    <div class="tab" data-target="tabNewService">+ New Service</div>
+  </div>
+
+  <div class="tab-content active" id="tabBookings">
+    <div id="bookingsTable"><p class="loading">Loading...</p></div>
+  </div>
+
+  <div class="tab-content" id="tabServices">
+    <div id="servicesTable"><p class="loading">Loading...</p></div>
+  </div>
+
+  <div class="tab-content" id="tabNewService">
+    <div class="auth-card" style="max-width:560px;margin:0">
+      <h2>Create New Service</h2>
+      <div class="alert" id="serviceAlert"></div>
+      <form id="serviceForm" novalidate>
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="svcTitle" placeholder="e.g. Python Tutoring Sessions"/>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="svcDesc" rows="4" placeholder="Describe what you offer, your experience, availability..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="svcCategory">
+            <option value="">Select category</option>
+            <option>Programming</option><option>Tutoring</option>
+            <option>Design</option><option>Photography</option>
+            <option>Writing</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Price ($)</label>
+          <input type="number" id="svcPrice" placeholder="e.g. 25" min="1"/>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Publish Service</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/validation.js"></script>
+<script src="js/dashboard.js"></script>
+<script>
+// Create service form
+document.getElementById('serviceForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const title    = document.getElementById('svcTitle').value.trim();
+  const description = document.getElementById('svcDesc').value.trim();
+  const category = document.getElementById('svcCategory').value;
+  const price    = parseFloat(document.getElementById('svcPrice').value);
+  if (!title || !description || !category || !price) {
+    showAlert('serviceAlert', 'All fields are required.'); return;
+  }
+  const { ok, data } = await apiFetch('/services', {
+    method: 'POST', body: JSON.stringify({ title, description, category, price })
+  });
+  if (ok) { showAlert('serviceAlert', 'Service published!', 'success'); e.target.reset(); }
+  else { showAlert('serviceAlert', data.message || 'Failed to create service.'); }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Bookings — SkillSwap</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<nav class="navbar">
+  <a class="nav-logo" href="index.html">SkillSwap</a>
+  <div class="nav-links" id="navLinks"></div>
+</nav>
+<div class="dashboard-wrap">
+  <div class="dashboard-header">
+    <h1>My Bookings</h1>
+    <p class="text-muted">Track your service requests and leave reviews</p>
+  </div>
+  <div class="alert" id="dashAlert"></div>
+
+  <div class="stats-row">
+    <div class="stat-card" id="statPending"   data-val="0"><div class="num">—</div><div class="lbl">Pending</div></div>
+    <div class="stat-card" id="statActive"    data-val="0"><div class="num">—</div><div class="lbl">Active</div></div>
+    <div class="stat-card" id="statCompleted" data-val="0"><div class="num">—</div><div class="lbl">Completed</div></div>
+  </div>
+
+  <div id="bookingsTable"><p class="loading">Loading bookings...</p></div>
+
+  <!-- Review Modal -->
+  <div id="reviewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);align-items:center;justify-content:center;z-index:999">
+    <div class="auth-card" style="max-width:420px;margin:0">
+      <h2>Leave a Review</h2>
+      <div class="alert" id="reviewAlert"></div>
+      <form id="reviewForm">
+        <input type="hidden" id="reviewBookingId"/>
+        <div class="form-group">
+          <label>Rating</label>
+          <select id="reviewRating">
+            <option value="5">★★★★★ — Excellent</option>
+            <option value="4">★★★★☆ — Good</option>
+            <option value="3">★★★☆☆ — Okay</option>
+            <option value="2">★★☆☆☆ — Poor</option>
+            <option value="1">★☆☆☆☆ — Terrible</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Comment</label>
+          <textarea id="reviewComment" rows="3" placeholder="Share your experience..."></textarea>
+        </div>
+        <div style="display:flex;gap:.8rem">
+          <button type="submit" class="btn btn-primary" style="flex:1">Submit Review</button>
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('reviewModal').style.display='none'">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script src="js/api.js"></script>
+<script src="js/validation.js"></script>
+<script src="js/dashboard.js"></script>
+<script>
+document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const bookingId = document.getElementById('reviewBookingId').value;
+  const rating    = document.getElementById('reviewRating').value;
+  const comment   = document.getElementById('reviewComment').value.trim();
+  if (!comment) { showAlert('reviewAlert', 'Please write a comment.'); return; }
+  const { ok, data } = await apiFetch('/reviews', {
+    method: 'POST', body: JSON.stringify({ booking_id: parseInt(bookingId), rating: parseInt(rating), comment })
+  });
+  if (ok) {
+    document.getElementById('reviewModal').style.display = 'none';
+    showAlert('dashAlert', 'Review submitted!', 'success');
+    await loadBookings();
+  } else { showAlert('reviewAlert', data.message || 'Failed.'); }
+});
+</script>
+</body>
+</html>

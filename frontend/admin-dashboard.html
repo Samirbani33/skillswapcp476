@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard — SkillSwap</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<nav class="navbar">
+  <a class="nav-logo" href="index.html">SkillSwap</a>
+  <div class="nav-links" id="navLinks"></div>
+</nav>
+
+<div class="admin-wrap">
+  <div class="dashboard-header">
+    <h1>Admin Dashboard</h1>
+    <p class="text-muted">Platform moderation and management</p>
+  </div>
+  <div class="alert" id="adminAlert"></div>
+
+  <!-- Stats -->
+  <div class="admin-grid" id="statsGrid">
+    <div class="admin-tile"><div class="num" id="statUsers">—</div><div class="lbl">Total Users</div></div>
+    <div class="admin-tile"><div class="num" id="statServices">—</div><div class="lbl">Active Services</div></div>
+    <div class="admin-tile"><div class="num" id="statBookings">—</div><div class="lbl">Total Bookings</div></div>
+    <div class="admin-tile"><div class="num" id="statReports" style="color:var(--error)">—</div><div class="lbl">Open Reports</div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" data-target="tabReports">Moderation Queue</div>
+    <div class="tab" data-target="tabUsers">Manage Users</div>
+  </div>
+
+  <div class="tab-content active" id="tabReports">
+    <div id="reportsTable"><p class="loading">Loading reports...</p></div>
+  </div>
+
+  <div class="tab-content" id="tabUsers">
+    <div id="usersTable"><p class="loading">Loading users...</p></div>
+  </div>
+</div>
+
+<footer><p>&copy; 2026 SkillSwap</p></footer>
+<script src="js/api.js"></script>
+<script src="js/validation.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  updateNav();
+  const user = getUser();
+  if (!user || user.role !== 'admin') { window.location.href = 'login.html'; return; }
+
+  // Tabs
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.target)?.classList.add('active');
+    });
+  });
+
+  await loadStats();
+  await loadReports();
+  await loadUsers();
+});
+
+async function loadStats() {
+  const { ok, data } = await apiFetch('/admin/stats');
+  if (!ok) return;
+  document.getElementById('statUsers').textContent    = data.total_users;
+  document.getElementById('statServices').textContent = data.total_services;
+  document.getElementById('statBookings').textContent = data.total_bookings;
+  document.getElementById('statReports').textContent  = data.open_reports;
+}
+
+async function loadReports() {
+  const { ok, data } = await apiFetch('/admin/reports');
+  if (!ok || !data.length) {
+    document.getElementById('reportsTable').innerHTML = '<p class="text-muted mt-2">No reports in queue.</p>'; return;
+  }
+  const rows = data.map(r => `
+    <tr>
+      <td>#${r.report_id}</td>
+      <td>${r.reporter_name}</td>
+      <td><strong>${r.target_type}</strong> #${r.target_id}</td>
+      <td>${r.reason}</td>
+      <td>${r.description || '—'}</td>
+      <td><span class="badge badge-${r.status === 'Pending' ? 'pending' : 'completed'}">${r.status}</span></td>
+      <td>
+        ${r.status === 'Pending' ? `
+          <button class="btn btn-danger btn-sm"  onclick="resolveReport(${r.report_id},'Resolved')">Remove</button>
+          <button class="btn btn-secondary btn-sm" onclick="resolveReport(${r.report_id},'Dismissed')">Dismiss</button>
+        ` : '—'}
+      </td>
+    </tr>`).join('');
+
+  document.getElementById('reportsTable').innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>ID</th><th>Reporter</th><th>Target</th><th>Reason</th><th>Notes</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+async function loadUsers() {
+  const { ok, data } = await apiFetch('/admin/users');
+  if (!ok) return;
+  const rows = data.map(u => `
+    <tr>
+      <td>#${u.user_id}</td>
+      <td>${u.first_name} ${u.last_name}</td>
+      <td>${u.email}</td>
+      <td><span class="badge badge-${u.role === 'provider' ? 'active' : 'pending'}">${u.role}</span></td>
+      <td><span class="badge badge-${u.is_active ? 'completed' : 'rejected'}">${u.is_active ? 'Active' : 'Disabled'}</span></td>
+      <td>
+        ${u.role !== 'admin' ? `
+          <button class="btn btn-sm ${u.is_active ? 'btn-danger' : 'btn-success'}"
+            onclick="toggleUser(${u.user_id}, ${u.is_active ? 0 : 1})">
+            ${u.is_active ? 'Disable' : 'Enable'}
+          </button>` : '—'}
+      </td>
+    </tr>`).join('');
+
+  document.getElementById('usersTable').innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+async function resolveReport(id, status) {
+  const { ok } = await apiFetch(`/admin/reports/${id}`, { method: 'PUT', body: JSON.stringify({ status }) });
+  if (ok) { showAlert('adminAlert', `Report ${status.toLowerCase()}.`, 'success'); await loadReports(); await loadStats(); }
+  else showAlert('adminAlert', 'Action failed.');
+}
+
+async function toggleUser(id, isActive) {
+  const { ok } = await apiFetch(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify({ is_active: isActive }) });
+  if (ok) { showAlert('adminAlert', isActive ? 'User enabled.' : 'User disabled.', 'success'); await loadUsers(); }
+  else showAlert('adminAlert', 'Action failed.');
+}
+</script>
+</body>
+</html>
