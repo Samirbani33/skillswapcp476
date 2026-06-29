@@ -12,7 +12,6 @@
 | Isha Shah | Developer 1 | Authentication | `backend/routes/auth.php`, `frontend/register.html`, `frontend/login.html` |
 | Shubh Upadhyay | Developer 2 | Marketplace | `backend/routes/services.php`, `frontend/marketplace.html`, `frontend/service-detail.html` |
 | Aryan Tagi | Developer 3 | Booking System | `backend/routes/bookings.php`, `frontend/customer-dashboard.html`, `frontend/provider-dashboard.html` |
-| Laiba Ali | Developer 4 | Reviews & Messaging | `backend/routes/reviews.php`, `backend/routes/messages.php`, `frontend/messages.html` |
 
 ---
 
@@ -132,4 +131,4 @@ Starts PHP backend on `http://localhost:8000` and opens `frontend/index.html` in
 ## Links
 - **GitHub Repo:** https://github.com/Samirbani33/skillswapcp476
 - **GitHub Project Board:** [Add Kanban link here]
-- **Activity Blog / Wiki:** [Add Wiki link here]
+- **Activity Blog / Wiki:** [docs/WIKI.md](docs/WIKI.md)
